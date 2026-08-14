@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,6 +38,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'apps.emails',
+    'apps.extraction',
+    'apps.calendarsync',
+    'apps.web',
 ]
 
 MIDDLEWARE = [
@@ -104,7 +109,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "Europe/Zagreb"
 
 USE_I18N = True
 
@@ -125,3 +130,9 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+IMAP_HOST = config("IMAP_HOST", default="")
+IMAP_PORT = config("IMAP_PORT", default=993, cast=int)
+IMAP_USER = config("IMAP_USER", default="")
+IMAP_PASSWORD = config("IMAP_PASSWORD", default="")
+IMAP_FOLDER = config("IMAP_FOLDER", default="INBOX")
