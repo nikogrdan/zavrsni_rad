@@ -136,3 +136,16 @@ IMAP_PORT = config("IMAP_PORT", default=993, cast=int)
 IMAP_USER = config("IMAP_USER", default="")
 IMAP_PASSWORD = config("IMAP_PASSWORD", default="")
 IMAP_FOLDER = config("IMAP_FOLDER", default="INBOX")
+
+LLM_PROVIDER = config("LLM_PROVIDER", default="fake")
+ANTHROPIC_API_KEY = config("ANTHROPIC_API_KEY", default="")
+LLM_MODEL = config("LLM_MODEL", default="claude-sonnet-5")
+PROMPT_VERSION = config("PROMPT_VERSION", default="v1")
+
+GOOGLE_CREDENTIALS_FILE = BASE_DIR / config(
+    "GOOGLE_CREDENTIALS_FILE", default="credentials.json"
+)
+GOOGLE_TOKEN_FILE = BASE_DIR / config(
+    "GOOGLE_TOKEN_FILE", default="token.json"
+)
+GOOGLE_CALENDAR_ID = config("GOOGLE_CALENDAR_ID", default="primary")
