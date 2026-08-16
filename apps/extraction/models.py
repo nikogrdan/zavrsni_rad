@@ -46,6 +46,8 @@ class ExtractedTask(models.Model):
     is_all_day = models.BooleanField(default=False)
     assignee = models.CharField(max_length=255, blank=True)
     confidence = models.FloatField(null=True, blank=True)
+    invite_attendees = models.BooleanField(default=False)
+    attendee_emails = models.JSONField(default=list, blank=True)
 
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True

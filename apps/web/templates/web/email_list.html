@@ -1,0 +1,86 @@
+{% extends "web/base.html" %}
+
+{% block title %}Poruke{% endblock %}
+
+{% block content %}
+<h1>Poruke</h1>
+<p class="lede">
+  {% if total_pending %}
+    Zadataka koji čekaju pregled: {{ total_pending }}.
+  {% else %}
+    Svi prepoznati zadaci su pregledani.
+  {% endif %}
+</p>
+
+<div class="row" style="justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:22px">
+  <div class="filters" style="margin-bottom:0">
+    <a class="chip" href="{% url 'web:email_list' %}"
+       {% if not status_filter %}aria-current="true"{% endif %}>SVE</a>
+    {% for value, label in statuses %}
+      <a class="chip" href="?status={{ value }}"
+         {% if status_filter == value %}aria-current="true"{% endif %}>{{ label|upper }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="row" style="gap:8px">
+    <form method="post" action="{% url 'web:refresh' %}" class="inline">
+      {% csrf_token %}
+      <input type="hidden" name="fetch" value="1">
+      <button class="btn" type="submit">Dohvati poruke</button>
+    </form>
+    <form method="post" action="{% url 'web:refresh' %}" class="inline">
+      {% csrf_token %}
+      <input type="hidden" name="fetch" value="1">
+      <input type="hidden" name="analyze" value="1">
+      <button class="btn primary" type="submit">Dohvati i analiziraj</button>
+    </form>
+  </div>
+</div>
+
+{% if emails %}
+<table>
+  <thead>
+    <tr>
+      <th>Predmet</th>
+      <th>Pošiljatelj</th>
+      <th>Primljeno</th>
+      <th>Status</th>
+      <th>Zadaci</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for email in emails %}
+    <tr>
+      <td>
+        <a href="{% url 'web:email_detail' email.pk %}">
+          {{ email.subject|default:"(bez predmeta)"|truncatechars:58 }}
+        </a>
+      </td>
+      <td class="mono meta">{{ email.sender_email }}</td>
+      <td class="mono meta">{{ email.received_at|date:"d.m.Y H:i"|default:"—" }}</td>
+      <td><span class="badge {{ email.status }}">{{ email.get_status_display }}</span></td>
+      <td class="mono meta">
+        {% if email.task_count %}
+          {{ email.task_count }}
+          {% if email.pending_count %}
+            <span style="color:var(--attention)">· {{ email.pending_count }} čeka</span>
+          {% endif %}
+        {% else %}
+          —
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty">
+  {% if status_filter %}
+    Nema poruka s tim statusom.
+  {% else %}
+    Još nema dohvaćenih poruka. Klikni <strong>Dohvati i analiziraj</strong>
+    ili pokreni <code>python manage.py fetch_emails</code>.
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -69,6 +69,13 @@ def _build_event_body(task):
             ],
         }
 
+    if task.invite_attendees and task.attendee_emails:
+        body["attendees"] = [
+            {"email": addr} for addr in task.attendee_emails
+        ]
+        body["guestsCanModify"] = False
+        body["guestsCanInviteOthers"] = False
+
     return body
 
 
@@ -79,7 +86,9 @@ def create_event(task, calendar_id=None):
     try:
         service = _get_service()
         event = service.events().insert(
-            calendarId=calendar_id, body=body
+            calendarId=calendar_id,
+            body=body,
+            sendUpdates="all" if task.invite_attendees else "none",
         ).execute()
     except HttpError as exc:
         raise CalendarError(f"Google API greška: {exc}") from exc

@@ -1,0 +1,116 @@
+{% extends "web/base.html" %}
+
+{% block title %}Evaluacija{% endblock %}
+
+{% block content %}
+<h1>Evaluacija točnosti</h1>
+<p class="lede">
+  Mjere nastaju iz ispravaka u sučelju. Svaki put kad ispraviš polje,
+  to se bilježi kao pogreška ekstrakcije.
+</p>
+
+<div class="card">
+  <div class="mono meta" style="line-height:2">
+    ekstrahiranih zadataka &nbsp;{{ total }}<br>
+    pregledano &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ reviewed_count }}<br>
+    prihvaćeno &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ accepted_count }}<br>
+    čeka pregled &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ pending_count }}
+  </div>
+  <p class="muted" style="margin:12px 0 0">
+    Zadaci koji čekaju pregled ne ulaze ni u jednu mjeru — nepregledani
+    zadatak ne može se smatrati točnim. Ručno uneseni zadaci također su
+    isključeni jer nemaju izvorni prijedlog modela.
+  </p>
+</div>
+
+<h2>Točnost po polju</h2>
+{% if accepted_count %}
+<table>
+  <thead>
+    <tr><th>Polje</th><th>Ispravaka</th><th>Točnost</th></tr>
+  </thead>
+  <tbody>
+    {% for s in field_stats %}
+    <tr>
+      <td>{{ s.label }} <span class="mono meta">{{ s.field }}</span></td>
+      <td class="mono meta">{{ s.wrong }} / {{ accepted_count }}</td>
+      <td class="mono" style="font-weight:600">{{ s.accuracy|floatformat:1 }} %</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p class="muted" style="margin-top:10px">
+  Nazivnik su prihvaćeni zadaci. Odbijeni se broje zasebno, kao lažni pozitivi.
+</p>
+{% else %}
+<div class="empty">Nema pregledanih zadataka. Potvrdi ili odbij nekoliko zadataka.</div>
+{% endif %}
+
+<h2>Zadaci bez ijedne izmjene</h2>
+<div class="card">
+  <div class="mono meta" style="line-height:2">
+    potpuno točnih &nbsp;{{ clean_rate|floatformat:1 }} %<br>
+    s barem jednim ispravkom &nbsp;{{ edited_any }} / {{ accepted_count }}
+  </div>
+  <p class="muted" style="margin:12px 0 0">
+    Stroža mjera od točnosti po polju: zadatak se broji kao točan samo
+    ako nijedno polje nije trebalo ispravak.
+  </p>
+</div>
+
+<h2>Lažni pozitivi</h2>
+<div class="card">
+  <div class="mono meta" style="line-height:2">
+    odbijenih &nbsp;{{ rejected }} / {{ reviewed_count }}
+    {% if rejection_rate is not None %} · {{ rejection_rate|floatformat:1 }} %{% endif %}
+  </div>
+  <p class="muted" style="margin:12px 0 0">
+    Zadaci koje je model prepoznao, a korisnik ih je odbacio kao nepostojeće.
+    Najčešće nastaju na porukama bez ijedne konkretne radnje.
+  </p>
+</div>
+
+<h2>Pouzdanost modela i stvarna točnost</h2>
+<div class="card">
+  <div class="mono meta" style="line-height:2">
+    prosjek kod ispravljenih &nbsp;&nbsp;{{ conf_edited|floatformat:2|default:"—" }}<br>
+    prosjek kod neispravljenih {{ conf_clean|floatformat:2|default:"—" }}
+  </div>
+  <p class="muted" style="margin:12px 0 0">
+    Ako je prva vrijednost osjetno niža, samoprocjena modela nosi informaciju
+    i može se koristiti za razvrstavanje zadataka po prioritetu pregleda.
+    Ako su podjednake, samoprocjena nije korisna — što je jednako vrijedan nalaz.
+  </p>
+</div>
+
+<h2>Usporedba modela i verzija upita</h2>
+{% if run_stats %}
+<table>
+  <thead>
+    <tr>
+      <th>Model</th><th>Upit</th><th>Poziva</th>
+      <th>Parsirano</th><th>Latencija</th><th>Ulaz</th><th>Izlaz</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in run_stats %}
+    <tr>
+      <td class="mono">{{ r.model }}</td>
+      <td class="mono meta">{{ r.prompt }}</td>
+      <td class="mono meta">{{ r.runs }}</td>
+      <td class="mono meta">{{ r.ok }} · {{ r.parse_rate|floatformat:0 }} %</td>
+      <td class="mono meta">{{ r.latency|floatformat:0 }} ms</td>
+      <td class="mono meta">{{ r.tin|floatformat:0 }}</td>
+      <td class="mono meta">{{ r.tout|floatformat:0 }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p class="muted" style="margin-top:10px">
+  Svako pokretanje s <span class="mono">--model</span> ili
+  <span class="mono">--prompt-version</span> dodaje novi redak.
+</p>
+{% else %}
+<div class="empty">Nema zabilježenih poziva modelu.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "web/base.html" %}
+
+{% block title %}Uredi zadatak{% endblock %}
+
+{% block content %}
+<p><a href="{% url 'web:email_detail' task.email_id %}" class="mono meta">← natrag na poruku</a></p>
+
+<h1>Uredi zadatak</h1>
+<p class="lede">
+  Sve što ovdje ispraviš bilježi se kao pogreška ekstrakcije i ulazi u evaluaciju.
+</p>
+
+<div class="card task" style="--conf: {{ task.confidence|default:0 }}"
+     {% if task.confidence is None %}data-conf="none"{% endif %}>
+  <div class="mono meta" style="line-height:1.9">
+    poruka &nbsp;&nbsp;&nbsp;{{ task.email.subject|default:"(bez predmeta)" }}<br>
+    od &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ task.email.sender_email }}<br>
+    model &nbsp;&nbsp;&nbsp;&nbsp;{{ task.run.model_name }} · {{ task.run.prompt_version }}<br>
+    pouzdanost {% if task.confidence is not None %}{{ task.confidence|floatformat:2 }}{% else %}—{% endif %}
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+
+  <h2>Podaci zadatka</h2>
+  <div class="card">
+    {% for field in form %}
+      {% if field.name == "is_all_day" %}
+        <label class="choice" style="margin-top:14px">
+          {{ field }} {{ field.label }}
+        </label>
+      {% else %}
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+      {% endif %}
+      {% if field.errors %}
+        <div class="msg error" style="margin:7px 0 0">{{ field.errors|join:", " }}</div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <h2>Pozivnice sudionicima</h2>
+  <div class="card">
+    {% if available_attendees %}
+      <p class="muted" style="margin:0 0 12px">
+        Odabrane osobe dobit će pozivnicu Google kalendara koju mogu
+        prihvatiti ili odbiti. Pozivnice se šalju tek pri dodavanju u kalendar.
+      </p>
+
+      <label class="choice" style="border:1px solid var(--rule); margin-bottom:10px">
+        <input type="checkbox" name="invite_attendees" value="1"
+               {% if task.invite_attendees %}checked{% endif %}>
+        Pošalji pozivnice
+      </label>
+
+      {% for addr in available_attendees %}
+        <label class="choice">
+          <input type="checkbox" name="attendees" value="{{ addr }}"
+                 {% if addr in task.attendee_emails %}checked{% endif %}>
+          {{ addr }}
+        </label>
+      {% endfor %}
+    {% else %}
+      <p class="muted" style="margin:0">
+        U ovoj poruci nema drugih adresa osim vlastite.
+      </p>
+    {% endif %}
+  </div>
+
+  {% if task.raw_payload %}
+  <h2>Izvorni prijedlog modela</h2>
+  <pre class="payload">{{ task.raw_payload|pprint }}</pre>
+  {% endif %}
+
+  <div class="row" style="margin-top:22px">
+    <button class="btn primary" type="submit">Spremi</button>
+    <a class="btn" href="{% url 'web:email_detail' task.email_id %}">Odustani</a>
+  </div>
+</form>
+{% endblock %}

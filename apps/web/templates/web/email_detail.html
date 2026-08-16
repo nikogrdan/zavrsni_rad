@@ -1,0 +1,117 @@
+{% extends "web/base.html" %}
+
+{% block title %}{{ email.subject|default:"Poruka" }}{% endblock %}
+
+{% block content %}
+<p><a href="{% url 'web:email_list' %}" class="mono meta">← natrag na popis</a></p>
+
+<h1>{{ email.subject|default:"(bez predmeta)" }}</h1>
+
+<div class="card">
+  <div class="mono meta" style="line-height:1.9">
+    od &nbsp;&nbsp;&nbsp;{{ email.sender_email }}<br>
+    za &nbsp;&nbsp;&nbsp;{% for r in email.recipients %}{{ r.email }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}<br>
+    kada &nbsp;{{ email.received_at|date:"d.m.Y H:i"|default:"—" }}
+  </div>
+  <div style="margin-top:12px">
+    <span class="badge {{ email.status }}">{{ email.get_status_display }}</span>
+  </div>
+  {% if email.error %}
+    <div class="msg error" style="margin:14px 0 0">{{ email.error }}</div>
+  {% endif %}
+</div>
+
+<h2>Sadržaj poruke</h2>
+<pre class="body">{{ email.body_text|default:"(poruka nema tekstualni dio)" }}</pre>
+
+<h2>Prepoznati zadaci — {{ tasks|length }}</h2>
+
+{% for task in tasks %}
+<div class="card task" style="--conf: {{ task.confidence|default:0 }}"
+     {% if task.confidence is None %}data-conf="none"{% endif %}>
+
+  <div class="task-head">
+    <span class="task-title">{{ task.title }}</span>
+    <span class="badge {{ task.status }}">{{ task.get_status_display }}</span>
+  </div>
+
+  <div class="mono meta" style="margin-top:9px">
+    {% if task.due_at %}
+      {{ task.due_at|date:"d.m.Y" }}{% if task.is_all_day %} · cijeli dan{% else %} · {{ task.due_at|date:"H:i" }}{% endif %}
+    {% else %}
+      bez roka
+    {% endif %}
+    {% if task.assignee %} · {{ task.assignee }}{% endif %}
+    {% if task.confidence is not None %}
+      · pouzdanost {{ task.confidence|floatformat:2 }}
+    {% endif %}
+  </div>
+
+  {% if task.description %}
+    <p class="muted" style="margin:9px 0 0">{{ task.description }}</p>
+  {% endif %}
+
+  {% if task.was_edited %}
+    <div class="mono meta" style="margin-top:9px; color:var(--attention)">
+      ispravljeno: {{ task.edited_fields|join:", " }}
+    </div>
+  {% endif %}
+
+  {% if task.invite_attendees and task.attendee_emails %}
+    <div class="mono meta" style="margin-top:9px">
+      pozivnice → {{ task.attendee_emails|join:", " }}
+    </div>
+  {% endif %}
+
+  <div class="actions row">
+    <a class="btn" href="{% url 'web:task_edit' task.pk %}">Uredi</a>
+
+    {% if task.status == "pending" %}
+      <form class="inline" method="post" action="{% url 'web:task_action' task.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="confirm">
+        <button class="btn ok" type="submit">Potvrdi</button>
+      </form>
+      <form class="inline" method="post" action="{% url 'web:task_action' task.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="reject">
+        <button class="btn bad" type="submit">Odbij</button>
+      </form>
+
+    {% elif task.status == "confirmed" %}
+      <form class="inline" method="post" action="{% url 'web:task_action' task.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="sync">
+        <button class="btn primary" type="submit">Dodaj u kalendar</button>
+      </form>
+
+    {% elif task.status == "synced" %}
+      <span class="mono meta">u kalendaru od {{ task.synced_at|date:"d.m.Y H:i" }}</span>
+
+    {% elif task.status == "rejected" %}
+      <form class="inline" method="post" action="{% url 'web:task_action' task.pk %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="confirm">
+        <button class="btn" type="submit">Vrati na potvrdu</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% empty %}
+<div class="empty">
+  Model nije prepoznao nijedan zadatak u ovoj poruci.
+</div>
+{% endfor %}
+
+{% if latest_run %}
+<h2>Zadnja analiza</h2>
+<div class="card mono meta" style="line-height:1.9">
+  model &nbsp;&nbsp;&nbsp;{{ latest_run.model_name }}<br>
+  upit &nbsp;&nbsp;&nbsp;&nbsp;{{ latest_run.prompt_version }}<br>
+  trajanje {{ latest_run.latency_ms|default:"—" }} ms<br>
+  tokeni &nbsp;{{ latest_run.input_tokens|default:"—" }} ulaznih ·
+  {{ latest_run.output_tokens|default:"—" }} izlaznih<br>
+  ishod &nbsp;&nbsp;{% if latest_run.parsed_ok %}parsirano uspješno{% else %}<span style="color:var(--reject)">{{ latest_run.error }}</span>{% endif %}
+</div>
+{% endif %}
+{% endblock %}
